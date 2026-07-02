@@ -1,6 +1,4 @@
-import { webcrypto } from '@substrate-system/one-webcrypto'
 import { fromString, toString as uToString, concat } from 'uint8arrays'
-import tweetnacl from 'tweetnacl'
 import {
     toArrayBuffer,
     normalizeBase64ToBuf,
@@ -31,6 +29,8 @@ export type VerifyArgs = {
     publicKey:Uint8Array|string;  // key or DID string
     signature:Uint8Array|string;
 }
+
+const webcrypto = globalThis.crypto
 
 /**
  * Using the key type as the record property name (i.e. string = key type)
@@ -140,7 +140,20 @@ export async function ed25519Verify ({
             'bytes, expected 64')
     }
 
-    return tweetnacl.sign.detached.verify(msg, sig, pub)
+    const key = await webcrypto.subtle.importKey(
+        'raw',
+        toArrayBuffer(pub),
+        { name: 'Ed25519' },
+        false,
+        ['verify']
+    )
+
+    return webcrypto.subtle.verify(
+        { name: 'Ed25519' },
+        key,
+        toArrayBuffer(sig),
+        toArrayBuffer(msg)
+    )
 }
 
 export async function rsaVerify ({

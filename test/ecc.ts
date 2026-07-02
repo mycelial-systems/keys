@@ -1,12 +1,14 @@
 import { get } from 'idb-keyval'
 import { test } from '@substrate-system/tapzero'
-import { toString } from 'uint8arrays'
+import { toString, fromString } from 'uint8arrays'
+import nacl from 'tweetnacl'
 import {
     EccKeys,
     exportPublicKey,
     importPublicKey,
     verify
 } from '../src/ecc/index.js'
+import { didToPublicKey } from '../src/crypto.js'
 import { EccCurve, KeyUse } from '../src/types.js'
 
 const subtle = crypto.subtle
@@ -178,6 +180,31 @@ test('verify signature', async t => {
     const sigBytes = await myKeys.sign(message)
     const isValidBytes = await verify(message, sigBytes, myKeys.DID)
     t.ok(isValidBytes, 'should verify valid signature with Uint8Array')
+})
+
+// Ed25519 signatures are produced via the webcrypto API. This checks that
+// output stays interoperable with tweetnacl's pure-JS implementation.
+test('signature is verifiable by tweetnacl', async t => {
+    const message = 'interop with tweetnacl'
+    const sig = await myKeys.sign(message)
+    const pub = didToPublicKey(myKeys.DID).publicKey
+
+    t.equal(pub.length, 32, 'raw Ed25519 public key should be 32 bytes')
+    t.equal(sig.length, 64, 'Ed25519 signature should be 64 bytes')
+
+    const verified = nacl.sign.detached.verify(
+        fromString(message, 'utf8'),
+        sig,
+        pub
+    )
+    t.ok(verified, 'tweetnacl should verify a signature made by this module')
+
+    const rejected = nacl.sign.detached.verify(
+        fromString('tampered message', 'utf8'),
+        sig,
+        pub
+    )
+    t.equal(rejected, false, 'tweetnacl should reject a wrong message')
 })
 
 test('getAesKey method', async t => {
