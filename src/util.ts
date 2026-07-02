@@ -1,4 +1,3 @@
-import { webcrypto } from '@substrate-system/one-webcrypto'
 import { fromString, toString as uToString } from 'uint8arrays'
 import type {
     DID,
@@ -24,6 +23,8 @@ import {
     DEFAULT_SYMM_ALGORITHM,
     DEFAULT_SYMM_LENGTH,
 } from './constants.js'
+
+const webcrypto = globalThis.crypto
 
 export const InvalidKeyUse = new Error('Invalid key use. Please use ' +
     "'encryption' or 'signing")

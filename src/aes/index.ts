@@ -1,4 +1,3 @@
-import { webcrypto } from '@substrate-system/one-webcrypto'
 import { toString, type SupportedEncodings, fromString } from 'uint8arrays'
 import {
     toBase64,
@@ -19,6 +18,8 @@ import {
     DEFAULT_CHAR_SIZE,
     IV_LENGTH
 } from '../constants.js'
+
+const webcrypto = globalThis.crypto
 
 export type AESName = 'AES-CBC'|'AES-GCM'|'AES-KW'|'AES-CTR'
 

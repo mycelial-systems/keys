@@ -1,4 +1,3 @@
-import { webcrypto } from '@substrate-system/one-webcrypto'
 import { type SupportedEncodings, toString, fromString } from 'uint8arrays'
 import {
     DEFAULT_ECC_EXCHANGE,
@@ -30,6 +29,8 @@ import {
 } from '../util.js'
 import { checkValidKeyUse } from '../errors.js'
 import { AbstractKeys, type KeyArgs } from '../_base.js'
+
+const webcrypto = globalThis.crypto
 
 // Helper function to ensure proper ArrayBuffer type
 function toArrayBuffer (data:Uint8Array):ArrayBuffer {

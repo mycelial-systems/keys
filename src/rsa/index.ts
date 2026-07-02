@@ -1,4 +1,3 @@
-import { webcrypto } from '@substrate-system/one-webcrypto'
 import { fromString, toString, type SupportedEncodings } from 'uint8arrays'
 import { AES, importAesKey } from '../aes/index.js'
 import {
@@ -38,6 +37,8 @@ import {
     publicKeyToDid,
     getPublicKeyAsArrayBuffer,
 } from '../crypto.js'
+
+const webcrypto = globalThis.crypto
 
 export { type SerializedKeys } from '../_base.js'
 export { publicKeyToDid, getPublicKeyAsArrayBuffer }

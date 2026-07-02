@@ -69,9 +69,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@substrate-system/one-webcrypto": "^1.1.3",
     "idb-keyval": "^6.2.2",
-    "tweetnacl": "^1.0.3",
     "uint8arrays": "^5.1.0"
   },
   "devDependencies": {
@@ -92,6 +90,7 @@
     "postcss-nesting": "^13.0.2",
     "preact": "^10.27.0",
     "tap-spec": "^5.0.0",
+    "tweetnacl": "^1.0.3",
     "typedoc": "^0.28.1",
     "typescript": "^5.8.3",
     "vite": "^7.1.11"
