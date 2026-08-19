@@ -18,8 +18,10 @@ import {
     publicKeyToDid,
     getPublicKeyAsArrayBuffer,
 } from './crypto.js'
+import { KeysDeletedError } from './errors.js'
 
 export { publicKeyToDid, getPublicKeyAsArrayBuffer }
+export { KeysDeletedError }
 export * from './constants.js'
 export type { DID }
 export { getPublicKeyAsUint8Array } from './crypto.js'
@@ -106,22 +108,50 @@ interface ChildKeys<T extends AbstractKeys = AbstractKeys> {
  */
 export abstract class AbstractKeys {
     DID:DID
-    exchangeKey:CryptoKeyPair
-    writeKey:CryptoKeyPair
     hasPersisted:boolean
     isSessionOnly:boolean
+    /**
+     * Have these keys been deleted? A deleted keypair is terminal -- the key
+     * material is gone, and any use of it throws.
+     */
+    destroyed:boolean
+    /**
+     * The `indexedDB` names this keypair was loaded from, and the names
+     * `persist` and `delete` will use.
+     */
+    readonly exchangeKeyName:string
+    readonly writeKeyName:string
     // type:'ecc'|'rsa'
     static EXCHANGE_KEY_NAME:string  // needs to be defined by child class
     static WRITE_KEY_NAME:string
     static _instance  // a cache for indexedDB
 
+    // the key material -- read it via the `exchangeKey`/`writeKey` getters,
+    // which throw if this instance was deleted
+    protected _exchangeKey:CryptoKeyPair|null
+    protected _writeKey:CryptoKeyPair|null
+
     constructor (opts:KeyArgs) {
         const { keys } = opts
+        const ctor = this.constructor as typeof AbstractKeys
         this.DID = opts.did
-        this.exchangeKey = keys.exchange
-        this.writeKey = keys.write
+        this._exchangeKey = keys.exchange
+        this._writeKey = keys.write
         this.hasPersisted = opts.hasPersisted
         this.isSessionOnly = !!opts.isSessionOnly
+        this.destroyed = false
+        this.exchangeKeyName = opts.exchangeKeyName || ctor.EXCHANGE_KEY_NAME
+        this.writeKeyName = opts.writeKeyName || ctor.WRITE_KEY_NAME
+    }
+
+    get exchangeKey ():CryptoKeyPair {
+        if (this.destroyed || !this._exchangeKey) throw new KeysDeletedError()
+        return this._exchangeKey
+    }
+
+    get writeKey ():CryptoKeyPair {
+        if (this.destroyed || !this._writeKey) throw new KeysDeletedError()
+        return this._writeKey
     }
 
     /**
@@ -227,28 +257,73 @@ export abstract class AbstractKeys {
      * Save this keys instance to `indexedDB`.
      */
     async persist ():Promise<void> {
+        if (this.destroyed) throw new KeysDeletedError()
         if (this.isSessionOnly) return
 
-        const exchange = (this.constructor as typeof AbstractKeys).EXCHANGE_KEY_NAME
-        const write = (this.constructor as typeof AbstractKeys).WRITE_KEY_NAME
-
         await Promise.all([
-            set(exchange, this.exchangeKey),
-            set(write, this.writeKey)
+            set(this.exchangeKeyName, this.exchangeKey),
+            set(this.writeKeyName, this.writeKey)
         ])
 
         this.hasPersisted = true
     }
 
     /**
-     * Delete the keys stored in indexedDB.
+     * Delete this keypair. This deletes the keys from indexedDB, drops the
+     * in-memory key material, and clears the instance cache, so `load` will
+     * not hand out these keys again.
+     *
+     * After this, the instance is `destroyed` -- using it throws
+     * a `KeysDeletedError`.
      */
     async delete ():Promise<void> {
-        await delMany([
-            (this.constructor as typeof AbstractKeys).EXCHANGE_KEY_NAME,
-            (this.constructor as typeof AbstractKeys).WRITE_KEY_NAME,
-        ])
+        const exchangeName = this.exchangeKeyName
+        const writeName = this.writeKeyName
+        await delMany([exchangeName, writeName])
+        const ctor = this.constructor as typeof AbstractKeys
+        ctor._invalidate(exchangeName, writeName)
+        this._destroy()
+    }
+
+    /**
+     * Drop the in-memory key material. Internal -- call `delete` instead.
+     */
+    _destroy ():void {
+        this.destroyed = true
         this.hasPersisted = false
+        this._exchangeKey = null
+        this._writeKey = null
+    }
+
+    /**
+     * If the cached instance was loaded from the given names, then its keys
+     * are gone too. Destroy it, and clear the cache. Internal.
+     */
+    static _invalidate (exchangeName:string, writeName:string):void {
+        const cached:AbstractKeys|null = this._instance
+        if (!cached) return
+        if (cached.exchangeKeyName !== exchangeName) return
+        if (cached.writeKeyName !== writeName) return
+        cached._destroy()
+        this._instance = null
+    }
+
+    /**
+     * Delete a stored keypair without loading it first. Deletes the keys from
+     * indexedDB, and destroys the cached instance, if there is one for
+     * these names.
+     *
+     * @param {{ encryptionKeyName, writeKeyName }} [opts] The indexedDB names
+     *   to delete. Defaults to this class's names.
+     */
+    static async delete (opts:{
+        encryptionKeyName?:string,
+        writeKeyName?:string
+    } = {}):Promise<void> {
+        const exchangeName = opts.encryptionKeyName || this.EXCHANGE_KEY_NAME
+        const writeName = opts.writeKeyName || this.WRITE_KEY_NAME
+        await delMany([exchangeName, writeName])
+        this._invalidate(exchangeName, writeName)
     }
 
     abstract toJson (format?:SupportedEncodings):Promise<{
@@ -337,15 +412,23 @@ export abstract class AbstractKeys {
             session: false,
         }
     ):Promise<T> {
-        if (this._instance) return this._instance  // cache
+        const exchangeKeyName = opts.encryptionKeyName || this.EXCHANGE_KEY_NAME
+        const writeKeyName = opts.writeKeyName || this.WRITE_KEY_NAME
+
+        // cache -- only if it is for the same indexedDB entries
+        const cached:AbstractKeys|null = this._instance
+        if (
+            cached &&
+            !cached.destroyed &&
+            cached.exchangeKeyName === exchangeKeyName &&
+            cached.writeKeyName === writeKeyName
+        ) {
+            return cached as T
+        }
 
         let hasPersisted = true
-        let exchangeKeys:CryptoKeyPair|undefined = await get(
-            opts.encryptionKeyName || this.EXCHANGE_KEY_NAME
-        )
-        let writeKeys:CryptoKeyPair|undefined = await get(
-            opts.writeKeyName || this.WRITE_KEY_NAME
-        )
+        let exchangeKeys:CryptoKeyPair|undefined = await get(exchangeKeyName)
+        let writeKeys:CryptoKeyPair|undefined = await get(writeKeyName)
 
         if (!exchangeKeys) {
             hasPersisted = false
@@ -366,7 +449,9 @@ export abstract class AbstractKeys {
             keys: { exchange: exchangeKeys, write: writeKeys },
             did,
             hasPersisted,
-            isSessionOnly: !!opts.session
+            isSessionOnly: !!opts.session,
+            exchangeKeyName,
+            writeKeyName
         }) as T
 
         this._instance = keys

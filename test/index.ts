@@ -6,6 +6,7 @@ import { type DID } from '../src/types.js'
 import './aes.js'
 import './rsa.js'
 import './ecc.js'
+import './delete.js'
 
 let rsaKeys:RsaKeys
 

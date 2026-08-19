@@ -28,7 +28,7 @@ import {
     didToPublicKey
 } from '../util.js'
 import { checkValidKeyUse } from '../errors.js'
-import { AbstractKeys, type KeyArgs } from '../_base.js'
+import { AbstractKeys } from '../_base.js'
 
 const webcrypto = globalThis.crypto
 
@@ -64,12 +64,6 @@ export class EccKeys extends AbstractKeys {
         }
     ):Promise<T> {
         return await super.create<T>(session, extractable, keys)
-    }
-
-    constructor (opts:KeyArgs) {
-        super(opts)
-        EccKeys.EXCHANGE_KEY_NAME = opts.exchangeKeyName || DEFAULT_ECC_EXCHANGE
-        EccKeys.WRITE_KEY_NAME = opts.writeKeyName || DEFAULT_ECC_WRITE
     }
 
     get publicExchangeKey () {
@@ -138,17 +132,7 @@ export class EccKeys extends AbstractKeys {
             session: false,
         }
     ):Promise<T> {
-        if (this._instance) return this._instance as T  // cache
-
-        // Use ECC-specific key names as defaults
-        const exchangeKeyName = opts.encryptionKeyName || DEFAULT_ECC_EXCHANGE
-        const writeKeyName = opts.writeKeyName || DEFAULT_ECC_WRITE
-
-        return super.load({
-            ...opts,
-            encryptionKeyName: exchangeKeyName,
-            writeKeyName
-        }) as Promise<T>
+        return super.load(opts) as Promise<T>
     }
 
     /**

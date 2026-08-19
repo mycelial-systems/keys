@@ -55,11 +55,13 @@ See also, [the API docs generated from typescript](https://substrate-system.gith
     + [`keys.DID`](#keysdid)
     + [`keys.getDeviceName` / `keys.deviceName`](#keysgetdevicename--keysdevicename)
     + [`keys.hasPersisted`](#keyshaspersisted)
+    + [`keys.destroyed`](#keysdestroyed)
     + [`keys.publicExchangeKey`](#keyspublicexchangekey)
     + [`keys.publicExchangeKeyAsString()`](#keyspublicexchangekeyasstring)
     + [`keys.publicWriteKey`](#keyspublicwritekey)
     + [`keys.publicWriteKeyAsString()`](#keyspublicwritekeyasstring)
   * [Delete a keypair](#delete-a-keypair)
+    + [`Keys.delete()`](#keysdelete)
   * [Sign and Verify Something](#sign-and-verify-something)
   * [encrypt something](#encrypt-something)
     + [`keys.encrypt` methods](#keysencrypt-methods)
@@ -444,6 +446,12 @@ const name = await keys.deviceName
 A flag indicating whether `.persist` has been called, meaning that these keys
 are saved in `indexedDB`.
 
+#### `keys.destroyed`
+
+A flag indicating whether [`.delete`](#delete-a-keypair) has been called. A
+destroyed keypair is terminal -- the key material is gone, and any use of it
+throws a `KeysDeletedError`.
+
 #### `keys.publicExchangeKey`
 
 The public encryption `CryptoKey`. For ECC keys, this is the X25519 exchange key.
@@ -476,10 +484,69 @@ Get the public signing key as a string.
 
 ### Delete a keypair
 
-Delete the keys from `indexedDB`.
+Delete the keypair. This deletes the keys from `indexedDB`, drops the
+in-memory key material, and clears the instance cache, so `load` will not
+hand these keys out again.
 
 ```js
 await keys.delete()
+```
+
+`delete` is terminal. Afterwards the instance is `destroyed`, and using it
+throws a `KeysDeletedError`. That includes `persist`, so the common
+"make sure my keys are saved" guard cannot write a deleted keypair back
+into `indexedDB`.
+
+```js
+await keys.delete()
+
+keys.destroyed  // => true
+
+// all of these throw
+keys.publicExchangeKey
+await keys.sign('hello')
+await keys.encrypt('hello')
+if (!keys.hasPersisted) await keys.persist()
+```
+
+The names deleted are the ones the instance was loaded with, so keys
+loaded under custom names delete the custom entries.
+
+```js
+const keys = await EccKeys.load({
+    encryptionKeyName: 'my-exchange-key',
+    writeKeyName: 'my-write-key'
+})
+
+// deletes 'my-exchange-key' and 'my-write-key'
+await keys.delete()
+```
+
+#### `Keys.delete()`
+
+Delete a stored keypair without loading it first. This is the companion to
+the static `exist` method. It deletes the given entries from `indexedDB`,
+and destroys the cached instance if there is one for those names.
+
+```ts
+{
+  static async delete (opts?:{
+      encryptionKeyName?:string,
+      writeKeyName?:string
+  }):Promise<void>
+}
+```
+
+```js
+import { EccKeys } from '@substrate-system/keys/ecc'
+
+await EccKeys.delete()
+
+// or, if you used custom names
+await EccKeys.delete({
+    encryptionKeyName: 'my-exchange-key',
+    writeKeyName: 'my-write-key'
+})
 ```
 
 --------------------------------------------------------------------------

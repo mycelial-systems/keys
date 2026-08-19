@@ -100,15 +100,6 @@ test('Create keys from indexedDB', async t => {
     t.equal(newKeys.hasPersisted, true, 'should have `persisted` flag')
 })
 
-test('Delete the keys from indexedDB', async t => {
-    t.ok(keys.hasPersisted, 'should start with persisted keys')
-    t.ok(await get(RsaKeys.EXCHANGE_KEY_NAME), 'Should return key from indexedDB')
-    await keys.delete()
-    t.ok(!keys.hasPersisted, 'now keys.persisted is false')
-    const res = await get(RsaKeys.EXCHANGE_KEY_NAME)
-    t.ok(!res, 'should not return keys from indexedDB')
-})
-
 test('device name', async t => {
     const name = await RsaKeys.deviceName(keys.DID)
     const name2 = await keys.getDeviceName()
@@ -370,3 +361,13 @@ test('in memory, using the .load method', async t => {
     t.ok(keysTwo.DID !== keys.DID, 'should not use the same instance')
 })
 
+// `delete` is terminal -- it destroys the in-memory key material -- so this
+// has to be the last thing we do with these keys.
+test('Delete the keys from indexedDB', async t => {
+    t.ok(keys.hasPersisted, 'should start with persisted keys')
+    t.ok(await get(RsaKeys.EXCHANGE_KEY_NAME), 'Should return key from indexedDB')
+    await keys.delete()
+    t.ok(!keys.hasPersisted, 'now keys.persisted is false')
+    const res = await get(RsaKeys.EXCHANGE_KEY_NAME)
+    t.ok(!res, 'should not return keys from indexedDB')
+})

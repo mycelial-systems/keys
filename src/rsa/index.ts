@@ -10,7 +10,7 @@ import {
     DEFAULT_RSA_SIZE,
     DEFAULT_HASH_ALGORITHM,
 } from '../constants.js'
-import { AbstractKeys, type KeyArgs } from '../_base.js'
+import { AbstractKeys } from '../_base.js'
 import type {
     DID,
     Msg,
@@ -75,12 +75,6 @@ export class RsaKeys extends AbstractKeys {
         }
     ):Promise<T> {
         return await super.create<T>(session, extractable, keys)
-    }
-
-    constructor (opts:KeyArgs) {
-        super(opts)
-        RsaKeys.EXCHANGE_KEY_NAME = opts.exchangeKeyName || DEFAULT_RSA_EXCHANGE
-        RsaKeys.WRITE_KEY_NAME = opts.writeKeyName || DEFAULT_RSA_WRITE
     }
 
     static async _createExchangeKeys (extractable:boolean = false):Promise<CryptoKeyPair> {

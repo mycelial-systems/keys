@@ -268,21 +268,6 @@ test('Create keys from indexedDB', async t => {
     t.equal(EccKeys._instance, newKeys, 'should cache the loaded instance')
 })
 
-test('Delete the keys from indexedDB', async t => {
-    t.equal(myKeys.hasPersisted, true, 'should start with persisted keys')
-
-    const loadedKeys = await EccKeys.load()
-    t.ok(loadedKeys, 'Should return key from indexedDB')
-
-    await myKeys.delete()
-    t.equal(myKeys.hasPersisted, false, 'now keys.persisted is false')
-
-    const encryptionKey = await get(EccKeys.EXCHANGE_KEY_NAME)
-    const signKey = await get(EccKeys.WRITE_KEY_NAME)
-    t.equal(encryptionKey, undefined, 'should not return keys from indexedDB')
-    t.equal(signKey, undefined, 'should not return signature key from indexedDB')
-})
-
 test('device name', async t => {
     const deviceName = await myKeys.getDeviceName()
     const deviceName2 = await EccKeys.deviceName(myKeys.DID)
@@ -591,3 +576,20 @@ function bytesEqual (a:Uint8Array, b:Uint8Array) {
     }
     return true
 }
+
+// `delete` is terminal -- it destroys the in-memory key material -- so this
+// has to be the last thing we do with these keys.
+test('Delete the keys from indexedDB', async t => {
+    t.equal(myKeys.hasPersisted, true, 'should start with persisted keys')
+
+    const loadedKeys = await EccKeys.load()
+    t.ok(loadedKeys, 'Should return key from indexedDB')
+
+    await myKeys.delete()
+    t.equal(myKeys.hasPersisted, false, 'now keys.persisted is false')
+
+    const encryptionKey = await get(EccKeys.EXCHANGE_KEY_NAME)
+    const signKey = await get(EccKeys.WRITE_KEY_NAME)
+    t.equal(encryptionKey, undefined, 'should not return keys from indexedDB')
+    t.equal(signKey, undefined, 'should not return signature key from indexedDB')
+})

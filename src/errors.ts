@@ -15,6 +15,17 @@ export const InvalidKeyUse = new Error('Invalid key use. Please use ' +
 export const InvalidMaxValue = new Error('Max must be less than 256 and ' +
     ' greater than 0')
 
+/**
+ * Thrown when you use a keypair that has been deleted. A deleted keypair
+ * is terminal -- it cannot be used or persisted again.
+ */
+export class KeysDeletedError extends Error {
+    constructor (msg?:string) {
+        super(msg || 'These keys were deleted')
+        this.name = 'KeysDeletedError'
+    }
+}
+
 export function checkIsKeyPair (keypair: any): CryptoKeyPair {
     if (!keypair || keypair === null) {
         throw KeyDoesNotExist
@@ -49,6 +60,7 @@ function checkValid<T> (toCheck:T, opts:T[], error:Error):void {
 }
 
 export default {
+    KeysDeletedError,
     KeyDoesNotExist,
     NotKeyPair,
     NotKey,
