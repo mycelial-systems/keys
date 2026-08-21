@@ -396,9 +396,14 @@ export abstract class AbstractKeys {
      * Restore some keys from indexedDB, or create a new keypair if it doesn't
      * exist yet.
      *
-     * @param {{ encryptionKeyName, signingKeyName, session }} opts Strings to
-     *   use as keys in indexedDB, and a session boolean, is this in memory
-     *   only? Or can it be persisted.
+     * By default this saves the keys to `indexedDB` before returning, so the
+     * keypair you get back survives a page reload. Pass `{ persist: false }`
+     * to skip that and call `.persist()` yourself. Session keys are never
+     * written to `indexedDB`, so `{ session: true }` wins over `persist`.
+     *
+     * @param {{ encryptionKeyName, signingKeyName, session, persist }} opts
+     *   Strings to use as keys in indexedDB, a session boolean -- is this in
+     *   memory only? Or can it be persisted -- and a persist boolean.
      * @returns {Promise<AbstractKeys>}
      */
     static async load<T extends AbstractKeys = AbstractKeys> (
@@ -408,10 +413,12 @@ export abstract class AbstractKeys {
             writeKeyName:string,
             session:boolean,
             extractable:boolean,
+            persist:boolean,
         }> = {
             session: false,
         }
     ):Promise<T> {
+        const shouldPersist = opts.persist !== false
         const exchangeKeyName = opts.encryptionKeyName || this.EXCHANGE_KEY_NAME
         const writeKeyName = opts.writeKeyName || this.WRITE_KEY_NAME
 
@@ -423,6 +430,7 @@ export abstract class AbstractKeys {
             cached.exchangeKeyName === exchangeKeyName &&
             cached.writeKeyName === writeKeyName
         ) {
+            if (shouldPersist && !cached.hasPersisted) await cached.persist()
             return cached as T
         }
 
@@ -455,6 +463,7 @@ export abstract class AbstractKeys {
         }) as T
 
         this._instance = keys
+        if (shouldPersist && !hasPersisted) await keys.persist()
         return keys
     }
 }

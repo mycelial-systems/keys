@@ -7,6 +7,7 @@ import './aes.js'
 import './rsa.js'
 import './ecc.js'
 import './delete.js'
+import './persist.js'
 
 let rsaKeys:RsaKeys
 

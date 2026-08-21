@@ -270,13 +270,11 @@ ECC is now supported in all major browsers.
 ```js
 import { EccKeys, verify } from '@substrate-system/keys/ecc'
 
-const keys = await EccKeys.create()
-
-// save the keys to indexedDB
-await keys.persist()
+// create a keypair, and save it to indexedDB
+const keys = await EccKeys.load()
 
 // ... sometime in the future ...
-// get our keys from indexedDB
+// get the same keys back from indexedDB
 const keysAgain = await EccKeys.load()
 
 console.assert(keys.DID === keysAgain.DID)  // true
@@ -443,8 +441,9 @@ const name = await keys.deviceName
 
 #### `keys.hasPersisted`
 
-A flag indicating whether `.persist` has been called, meaning that these keys
-are saved in `indexedDB`.
+A flag indicating whether these keys are saved in `indexedDB`. It is `true`
+after `.persist`, and after any `.load` that did not opt out with
+`{ persist: false }`.
 
 #### `keys.destroyed`
 
@@ -789,6 +788,10 @@ class EccKeys {  // or RsaKeys
 }
 ```
 
+You only need this for keys made with [`.create`](#create-a-new-keys-instance), or
+for a [`.load`](#static-load) that opted out with `{ persist: false }`.
+Otherwise `.load` has already saved them.
+
 #### `.persist` example
 ```js
 import { EccKeys } from '@substrate-system/keys/ecc'
@@ -803,6 +806,11 @@ await keys.persist()
 Create a `Keys` instance from data saved to `indexedDB`. Pass in different
 `indexedDB` key names for the keys if you need to.
 
+If there is nothing saved yet, `.load` creates a new keypair *and saves it*,
+so the keys you get back are durable -- reload the page, call `.load` again,
+and you get the same identity. There is no separate `.persist` step to
+remember. Pass `{ persist: false }` if you want the old two-step behavior.
+
 #### `static .load`
 ```ts
 class EccKeys {  // or RsaKeys
@@ -811,6 +819,7 @@ class EccKeys {  // or RsaKeys
       writeKeyName?:string,
       session?:boolean,
       extractable?:boolean,
+      persist?:boolean,
     }):Promise<EccKeys>
 }
 ```
@@ -821,6 +830,7 @@ class EccKeys {  // or RsaKeys
 - `writeKeyName` (optional, string): Custom name for the signing key in `indexedDB`
 - `session` (optional, boolean): If `true`, creates session-only keys if no keys exist in `indexedDB`
 - `extractable` (optional, boolean): If `true` and keys don't exist in `indexedDB`, new keys will be created as extractable. Defaults to `false`.
+- `persist` (optional, boolean): Save the keys to `indexedDB` before returning. Defaults to `true`. Session keys are never written, so `session: true` wins over this.
 
 #### example
 
@@ -828,8 +838,10 @@ class EccKeys {  // or RsaKeys
 import { EccKeys } from '@substrate-system/keys/ecc'
 // or: import { RsaKeys } from '@substrate-system/keys/rsa'
 
-// Load existing keys from indexedDB, or create new non-extractable ones
+// Load existing keys from indexedDB, or create and save new
+// non-extractable ones
 const newKeys = await EccKeys.load()
+console.log(newKeys.hasPersisted)  // true
 
 // Load with custom options
 const customKeys = await EccKeys.load({
@@ -837,6 +849,11 @@ const customKeys = await EccKeys.load({
   writeKeyName: 'my-custom-signing-key',
   extractable: true  // If keys don't exist, create them as extractable
 })
+
+// Opt out of saving -- you are responsible for calling `.persist`
+const unsaved = await EccKeys.load({ persist: false })
+console.log(unsaved.hasPersisted)  // false
+await unsaved.persist()
 ```
 
 
@@ -1096,7 +1113,8 @@ const decrypted = await keys.decrypt(encrypted)
 
 Create a keypair, but do not save it in `indexedDB`, even if you call `persist`.
 Pass `true` as the session parameter to `.create` or
-pass `{ session: true }` to `.load`.
+pass `{ session: true }` to `.load`. Session keys are never written to
+`indexedDB`, so `session: true` beats the `persist` default in `.load`.
 
 ```js
 import { EccKeys } from '@substrate-system/keys/ecc'

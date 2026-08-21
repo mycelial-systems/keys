@@ -120,6 +120,9 @@ export class EccKeys extends AbstractKeys {
     /**
      * Restore some keys from indexedDB, or create a new keypair if it doesn't
      * exist yet. Overrides base class to use ECC-specific key names.
+     *
+     * Saves the keys to `indexedDB` before returning, unless you pass
+     * `{ persist: false }`.
      */
     static async load<T extends AbstractKeys = EccKeys> (
         this:typeof EccKeys,
@@ -128,6 +131,7 @@ export class EccKeys extends AbstractKeys {
             writeKeyName:string,
             session:boolean,
             extractable:boolean,
+            persist:boolean,
         }> = {
             session: false,
         }
