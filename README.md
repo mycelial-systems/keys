@@ -8,10 +8,12 @@
 [![license](https://img.shields.io/badge/license-Big_Time-blue?style=flat-square)](LICENSE)
 
 
-Create and store keypairs in the browser with the [web crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API).
+Create and store keypairs in the browser with the
+[web crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API).
 
 Use [`indexedDB`](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
-to store [non-extractable keypairs](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/generateKey#extractable)
+to store
+[non-extractable keypairs](https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/generateKey#extractable)
 in the browser. "Non-extractable" means that the browser prevents you from ever
 reading the private key, but the keys can still be persisted and
 re-used indefinitely.
@@ -19,13 +21,14 @@ re-used indefinitely.
 >
 > [!TIP]
 > Use the [persist method](https://developer.mozilla.org/en-US/docs/Web/API/StorageManager/persist)
-> to tell the browser not to delete from `indexedDB`.
+> to request that the browser not delete from `indexedDB`.
 >
 
 Each instance of `Keys` has two keypairs &mdash; one for signing, and another
 for encrypting. 
 
-See also, [the API docs generated from typescript](https://substrate-system.github.io/keys/).
+See also,
+[the API docs generated from typescript](https://substrate-system.github.io/keys/).
 
 <details><summary><h2>Contents</h2></summary>
 
@@ -245,9 +248,8 @@ const rsaType = keyTypeFromDid(rsaKeys.DID)
 
 ### Verify a signature
 
-This function takes either an Ed25519 key or an RSA key. This is exposed as
-a separate function so that you do not need to bundle all of `keys` just to
-verify something.
+This is exposed as a separate import so that you do not need to bundle all of
+`keys` just to verify a signature.
 
 ```js
 import { verify } from '@substrate-system/keys/crypto'
