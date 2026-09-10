@@ -49,6 +49,7 @@ See also,
     + [`crypto.verify`](#cryptoverify)
     + [`crypto.keyTypeFromDid`](#cryptokeytypefromdid)
 - [Get started](#get-started)
+  * [Storage](#storage)
   * [ECC keys](#ecc-keys)
     + [Create a keypair](#create-a-keypair)
     + [Encrypt a Message](#encrypt-a-message)
