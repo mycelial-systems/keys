@@ -52,17 +52,26 @@ export class EccKeys extends AbstractKeys {
      *   Default `false`.
      * @param {boolean} [extractable] Can we extract the private keys? Default
      *   `false`.
-     * @param {{ exchangeKeys, writeKeys }} [keys] A set of keys to use here.
+     * @param {{ dbKey, exchangeKeys, writeKeys }} [keys] Key options.
+     *   `dbKey` prefixes the IndexedDB names used for both keypairs.
      * @returns {Promise<EccKeys>} A new class instance.
      */
     static async create<T extends AbstractKeys = EccKeys> (
         session?:boolean,
         extractable?:boolean,
         keys?:{
+            dbKey?:string,
             exchangeKeys?:CryptoKeyPair|null,
             writeKeys?:CryptoKeyPair|null,
         }
     ):Promise<T> {
+        if (keys?.dbKey) {
+            const exchangeKeyName =
+                `${keys.dbKey}.${DEFAULT_ECC_EXCHANGE}`
+            const writeKeyName = `${keys.dbKey}.${DEFAULT_ECC_WRITE}`
+            EccKeys.EXCHANGE_KEY_NAME = exchangeKeyName
+            EccKeys.WRITE_KEY_NAME = writeKeyName
+        }
         return await super.create<T>(session, extractable, keys)
     }
 

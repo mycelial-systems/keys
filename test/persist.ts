@@ -8,6 +8,8 @@ const CUSTOM = {
     writeKeyName: 'test-persist-write'
 }
 
+const DB_KEY = 'test-create-db-key'
+
 /**
  * Start from a known state -- no cached instance, and nothing in
  * indexedDB under the names this file uses.
@@ -40,6 +42,40 @@ test('load saves new keys to indexedDB by default', async t => {
         'should write the exchange key to indexedDB')
     t.ok(await get(EccKeys.WRITE_KEY_NAME),
         'should write the write key to indexedDB')
+})
+
+test('create with dbKey persists both ECC keypairs', async t => {
+    await reset()
+    const keys = await EccKeys.create(false, false, { dbKey: DB_KEY })
+    await keys.persist()
+
+    t.equal(keys.exchangeKeyName, `${DB_KEY}.ecc-exchange`,
+        'should prefix the ECC exchange key name')
+    t.equal(keys.writeKeyName, `${DB_KEY}.ecc-write`,
+        'should prefix the ECC signing key name')
+    t.ok(await get(`${DB_KEY}.ecc-exchange`),
+        'should persist the ECC exchange key under the prefixed name')
+    t.ok(await get(`${DB_KEY}.ecc-write`),
+        'should persist the ECC signing key under the prefixed name')
+
+    await keys.delete()
+})
+
+test('create with dbKey persists both RSA keypairs', async t => {
+    await reset()
+    const keys = await RsaKeys.create(false, false, { dbKey: DB_KEY })
+    await keys.persist()
+
+    t.equal(keys.exchangeKeyName, `${DB_KEY}.rsa-exchange-key`,
+        'should prefix the RSA exchange key name')
+    t.equal(keys.writeKeyName, `${DB_KEY}.rsa-write-key`,
+        'should prefix the RSA signing key name')
+    t.ok(await get(`${DB_KEY}.rsa-exchange-key`),
+        'should persist the RSA exchange key under the prefixed name')
+    t.ok(await get(`${DB_KEY}.rsa-write-key`),
+        'should persist the RSA signing key under the prefixed name')
+
+    await keys.delete()
 })
 
 test('the persisted keys survive a reload', async t => {

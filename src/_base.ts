@@ -121,7 +121,6 @@ export abstract class AbstractKeys {
      */
     readonly exchangeKeyName:string
     readonly writeKeyName:string
-    // type:'ecc'|'rsa'
     static EXCHANGE_KEY_NAME:string  // needs to be defined by child class
     static WRITE_KEY_NAME:string
     static _instance  // a cache for indexedDB
@@ -355,6 +354,7 @@ export abstract class AbstractKeys {
         keys?:{
             exchangeKeys?:CryptoKeyPair|null,
             writeKeys?:CryptoKeyPair|null,
+            dbKey?:string,
         }
     ):Promise<T> {
         // encryption

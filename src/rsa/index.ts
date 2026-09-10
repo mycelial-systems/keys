@@ -63,17 +63,26 @@ export class RsaKeys extends AbstractKeys {
      *   Default `false`.
      * @param {boolean} [extractable] Can we extract the private keys? Default
      *   `false`.
-     * @param {{ exchangeKeys, writeKeys }} [keys] A set of keys to use here.
+     * @param {{ dbKey, exchangeKeys, writeKeys }} [keys] Key options.
+     *   `dbKey` prefixes the IndexedDB names used for both keypairs.
      * @returns {Promise<RsaKeys>} A new class instance.
      */
     static async create<T extends AbstractKeys = RsaKeys> (
         session?:boolean,
         extractable?:boolean,
         keys?:{
+            dbKey?:string,
             exchangeKeys?:CryptoKeyPair|null,
             writeKeys?:CryptoKeyPair|null,
         }
     ):Promise<T> {
+        if (keys?.dbKey) {
+            const exchangeKeyName =
+                `${keys.dbKey}.${DEFAULT_RSA_EXCHANGE}`
+            const writeKeyName = `${keys.dbKey}.${DEFAULT_RSA_WRITE}`
+            RsaKeys.EXCHANGE_KEY_NAME = exchangeKeyName
+            RsaKeys.WRITE_KEY_NAME = writeKeyName
+        }
         return await super.create<T>(session, extractable, keys)
     }
 

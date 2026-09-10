@@ -49,7 +49,6 @@ See also,
     + [`crypto.verify`](#cryptoverify)
     + [`crypto.keyTypeFromDid`](#cryptokeytypefromdid)
 - [Get started](#get-started)
-  * [Verify a signature](#verify-a-signature)
   * [ECC keys](#ecc-keys)
     + [Create a keypair](#create-a-keypair)
     + [Encrypt a Message](#encrypt-a-message)
@@ -71,6 +70,7 @@ See also,
     + [`keys.encryptAsString` methods](#keysencryptasstring-methods)
   * [decrypt something](#decrypt-something)
 - [Examples](#examples)
+  * [Verify a signature](#verify-a-signature)
   * [Create a new `Keys` instance](#create-a-new-keys-instance)
     + [Parameters](#parameters)
     + [`.create()` example](#create-example)
@@ -246,19 +246,23 @@ const rsaType = keyTypeFromDid(rsaKeys.DID)
 
 ## Get started
 
-### Verify a signature
+### Storage
 
-This is exposed as a separate import so that you do not need to bundle all of
-`keys` just to verify a signature.
+Can use `dbKey` in `.create` to add a prefix to both stored key names:
 
-```js
-import { verify } from '@substrate-system/keys/crypto'
+```ts
+const keys = await EccKeys.create(false, false, { dbKey: 'alice' })
+await keys.persist()
+```
 
-// ed25519
-const isOk = await verify({ message, publicKey: ecc.DID, signature })
+For `.create`, pass `dbKey` in the third argument to prefix both IndexedDB
+key names. For example, `dbKey: 'alice'` stores ECC keypairs as
+`alice.ecc-exchange` and `alice.ecc-write`, or RSA keypairs as
+`alice.rsa-exchange-key` and `alice.rsa-write-key`.
 
-// RSA
-const isOk = await verify({ message, publicKey: rsa.DID, signature })
+```ts
+const rsaKeys = await RsaKeys.create(false, false, { dbKey: 'alice' })
+await rsaKeys.persist()
 ```
 
 ### ECC keys
@@ -675,11 +679,26 @@ const decrypted = await keys.decrypt(encryptedMsg)
 
 ## Examples
 
+### Verify a signature
+
+This is exposed as a separate import so that you do not need to bundle all of
+`keys` just to verify a signature.
+
+```js
+import { verify } from '@substrate-system/keys/crypto'
+
+// ed25519
+const isOk = await verify({ message, publicKey: ecc.DID, signature })
+
+// RSA
+const isOk = await verify({ message, publicKey: rsa.DID, signature })
+```
+
 ### Create a new `Keys` instance
 
-Use the factory function `EccKeys.create` or `RsaKeys.create`. The optional parameters,
-`encryptionKeyName` and `writeKeyName`, are added as properties to the
-`keys` instance. These are used as indexes for saving the keys in `indexedDB`.
+Use the factory function `EccKeys.create` or `RsaKeys.create`. The optional
+`dbKey` parameter prefixes the names used to save both keypairs in
+`indexedDB`.
 
 **ECC:**
 ```ts
@@ -691,6 +710,7 @@ class EccKeys {
     session?:boolean,  // default false
     extractable?:boolean,
     keys?:{
+        dbKey?:string,
         exchangeKeys?:CryptoKeyPair|null,
         writeKeys?:CryptoKeyPair|null,
     }
@@ -707,6 +727,7 @@ class RsaKeys {
     session?:boolean,  // defaut false
     extractable?:boolean,
     keys?:{
+        dbKey?:string,
         exchangeKeys?:CryptoKeyPair|null,
         writeKeys?:CryptoKeyPair|null,
     }
@@ -718,6 +739,9 @@ class RsaKeys {
 
 - `session` (optional, boolean): If `true`, keys are created in memory only and won't be saved to `indexedDB` even if `persist()` is called.
 - `extractable` (optional, boolean): If `true`, creates extractable keys that can be exported/read. Defaults to `false` for security.
+- `keys.dbKey` (optional, string): Prefix for both IndexedDB key names.
+- `keys.exchangeKeys` (optional): Existing exchange keypair to use.
+- `keys.writeKeys` (optional): Existing signing keypair to use.
 
 >
 > [!WARNING]  
