@@ -401,14 +401,16 @@ export abstract class AbstractKeys {
      * to skip that and call `.persist()` yourself. Session keys are never
      * written to `indexedDB`, so `{ session: true }` wins over `persist`.
      *
-     * @param {{ encryptionKeyName, signingKeyName, session, persist }} opts
-     *   Strings to use as keys in indexedDB, a session boolean -- is this in
-     *   memory only? Or can it be persisted -- and a persist boolean.
+     * @param {{ dbKey, encryptionKeyName, signingKeyName,
+     *   session, persist }} opts
+     *   `dbKey` prefixes both default indexedDB names. Other strings are
+     *   custom names, plus session and persist options.
      * @returns {Promise<AbstractKeys>}
      */
     static async load<T extends AbstractKeys = AbstractKeys> (
         this:ChildKeys & typeof AbstractKeys,
         opts:Partial<{
+            dbKey:string,
             encryptionKeyName:string,
             writeKeyName:string,
             session:boolean,

@@ -132,10 +132,13 @@ export class EccKeys extends AbstractKeys {
      *
      * Saves the keys to `indexedDB` before returning, unless you pass
      * `{ persist: false }`.
+     *
+     * @param {{ dbKey }} [opts] Prefix for both IndexedDB key names.
      */
     static async load<T extends AbstractKeys = EccKeys> (
         this:typeof EccKeys,
         opts:Partial<{
+            dbKey:string,
             encryptionKeyName:string,
             writeKeyName:string,
             session:boolean,
@@ -145,6 +148,13 @@ export class EccKeys extends AbstractKeys {
             session: false,
         }
     ):Promise<T> {
+        if (opts.dbKey) {
+            const exchangeKeyName =
+                `${opts.dbKey}.${DEFAULT_ECC_EXCHANGE}`
+            const writeKeyName = `${opts.dbKey}.${DEFAULT_ECC_WRITE}`
+            EccKeys.EXCHANGE_KEY_NAME = exchangeKeyName
+            EccKeys.WRITE_KEY_NAME = writeKeyName
+        }
         return super.load(opts) as Promise<T>
     }
 

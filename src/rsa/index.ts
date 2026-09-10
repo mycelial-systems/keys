@@ -86,6 +86,34 @@ export class RsaKeys extends AbstractKeys {
         return await super.create<T>(session, extractable, keys)
     }
 
+    /**
+     * Restore keys from indexedDB using the RSA key names.
+     *
+     * @param {{ dbKey }} [opts] Prefix for both IndexedDB key names.
+     */
+    static async load<T extends AbstractKeys = RsaKeys> (
+        this:typeof RsaKeys,
+        opts:Partial<{
+            dbKey:string,
+            encryptionKeyName:string,
+            writeKeyName:string,
+            session:boolean,
+            extractable:boolean,
+            persist:boolean,
+        }> = {
+            session: false,
+        }
+    ):Promise<T> {
+        if (opts.dbKey) {
+            const exchangeKeyName =
+                `${opts.dbKey}.${DEFAULT_RSA_EXCHANGE}`
+            const writeKeyName = `${opts.dbKey}.${DEFAULT_RSA_WRITE}`
+            RsaKeys.EXCHANGE_KEY_NAME = exchangeKeyName
+            RsaKeys.WRITE_KEY_NAME = writeKeyName
+        }
+        return super.load(opts) as Promise<T>
+    }
+
     static async _createExchangeKeys (extractable:boolean = false):Promise<CryptoKeyPair> {
         const exchangeKeys = await makeRSAKeypair(
             DEFAULT_RSA_SIZE,

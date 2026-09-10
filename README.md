@@ -249,7 +249,8 @@ const rsaType = keyTypeFromDid(rsaKeys.DID)
 
 ### Storage
 
-Can use `dbKey` in `.create` to add a prefix to both stored key names:
+Can use `dbKey` in `.create` or `.load` to add a prefix to both stored key
+names:
 
 ```ts
 const keys = await EccKeys.create(false, false, { dbKey: 'alice' })
@@ -264,6 +265,12 @@ key names. For example, `dbKey: 'alice'` stores ECC keypairs as
 ```ts
 const rsaKeys = await RsaKeys.create(false, false, { dbKey: 'alice' })
 await rsaKeys.persist()
+```
+
+For `.load`, pass `dbKey` in the options.
+
+```ts
+const keys = await EccKeys.load({ dbKey: 'alice' })
 ```
 
 ### ECC keys
@@ -842,6 +849,7 @@ remember. Pass `{ persist: false }` if you want the old two-step behavior.
 ```ts
 class EccKeys {  // or RsaKeys
     static async load (opts?:{
+      dbKey?:string,
       encryptionKeyName?:string,
       writeKeyName?:string,
       session?:boolean,
@@ -855,6 +863,7 @@ class EccKeys {  // or RsaKeys
 
 - `encryptionKeyName` (optional, string): Custom name for the encryption key in `indexedDB`
 - `writeKeyName` (optional, string): Custom name for the signing key in `indexedDB`
+- `dbKey` (optional, string): Prefix for both default IndexedDB key names.
 - `session` (optional, boolean): If `true`, creates session-only keys if no keys exist in `indexedDB`
 - `extractable` (optional, boolean): If `true` and keys don't exist in `indexedDB`, new keys will be created as extractable. Defaults to `false`.
 - `persist` (optional, boolean): Save the keys to `indexedDB` before returning. Defaults to `true`. Session keys are never written, so `session: true` wins over this.

@@ -78,6 +78,54 @@ test('create with dbKey persists both RSA keypairs', async t => {
     await keys.delete()
 })
 
+test('load with dbKey restores both ECC keypairs', async t => {
+    await reset()
+    EccKeys.EXCHANGE_KEY_NAME = 'ecc-exchange'
+    EccKeys.WRITE_KEY_NAME = 'ecc-write'
+
+    const source = await EccKeys.create(false, false, { dbKey: DB_KEY })
+    await source.persist()
+    const did = source.DID
+
+    EccKeys._instance = null
+    EccKeys.EXCHANGE_KEY_NAME = 'ecc-exchange'
+    EccKeys.WRITE_KEY_NAME = 'ecc-write'
+    const keys = await EccKeys.load({ dbKey: DB_KEY })
+
+    t.equal(keys.DID, did, 'should restore the ECC identity')
+    t.equal(keys.exchangeKeyName, `${DB_KEY}.ecc-exchange`,
+        'should use the prefixed ECC exchange key name')
+    t.equal(keys.writeKeyName, `${DB_KEY}.ecc-write`,
+        'should use the prefixed ECC signing key name')
+
+    await del(`${DB_KEY}.ecc-exchange`)
+    await del(`${DB_KEY}.ecc-write`)
+})
+
+test('load with dbKey restores both RSA keypairs', async t => {
+    await reset()
+    RsaKeys.EXCHANGE_KEY_NAME = 'rsa-exchange-key'
+    RsaKeys.WRITE_KEY_NAME = 'rsa-write-key'
+
+    const source = await RsaKeys.create(false, false, { dbKey: DB_KEY })
+    await source.persist()
+    const did = source.DID
+
+    RsaKeys._instance = null
+    RsaKeys.EXCHANGE_KEY_NAME = 'rsa-exchange-key'
+    RsaKeys.WRITE_KEY_NAME = 'rsa-write-key'
+    const keys = await RsaKeys.load({ dbKey: DB_KEY })
+
+    t.equal(keys.DID, did, 'should restore the RSA identity')
+    t.equal(keys.exchangeKeyName, `${DB_KEY}.rsa-exchange-key`,
+        'should use the prefixed RSA exchange key name')
+    t.equal(keys.writeKeyName, `${DB_KEY}.rsa-write-key`,
+        'should use the prefixed RSA signing key name')
+
+    await del(`${DB_KEY}.rsa-exchange-key`)
+    await del(`${DB_KEY}.rsa-write-key`)
+})
+
 test('the persisted keys survive a reload', async t => {
     await reset()
     const keys = await EccKeys.load()
