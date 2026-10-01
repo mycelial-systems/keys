@@ -78,6 +78,64 @@ test('create with dbKey persists both RSA keypairs', async t => {
     await keys.delete()
 })
 
+test('create with dbKey does not change the class default names',
+    async t => {
+        await reset()
+        const prefixed = await EccKeys.create(false, false, { dbKey: DB_KEY })
+
+        t.equal(EccKeys.EXCHANGE_KEY_NAME, 'ecc-exchange',
+            'should leave the static exchange key name alone')
+        t.equal(EccKeys.WRITE_KEY_NAME, 'ecc-write',
+            'should leave the static write key name alone')
+
+        const plain = await EccKeys.create()
+        t.equal(plain.exchangeKeyName, 'ecc-exchange',
+            'a later create without dbKey should use the default name')
+        t.equal(plain.writeKeyName, 'ecc-write',
+            'a later create without dbKey should use the default name')
+        t.equal(prefixed.exchangeKeyName, `${DB_KEY}.ecc-exchange`,
+            'the prefixed instance should keep its own name')
+    }
+)
+
+test('concurrent creates with different dbKeys keep their own names',
+    async t => {
+        await reset()
+        const [alice, bob] = await Promise.all([
+            EccKeys.create(false, false, { dbKey: 'alice' }),
+            EccKeys.create(false, false, { dbKey: 'bob' })
+        ])
+
+        t.equal(alice.exchangeKeyName, 'alice.ecc-exchange',
+            'alice should get the alice prefix')
+        t.equal(alice.writeKeyName, 'alice.ecc-write',
+            'alice should get the alice prefix')
+        t.equal(bob.exchangeKeyName, 'bob.ecc-exchange',
+            'bob should get the bob prefix')
+        t.equal(bob.writeKeyName, 'bob.ecc-write',
+            'bob should get the bob prefix')
+    }
+)
+
+test('load with dbKey does not change the class default names', async t => {
+    await reset()
+    const prefixed = await EccKeys.load({ dbKey: DB_KEY })
+
+    t.equal(prefixed.exchangeKeyName, `${DB_KEY}.ecc-exchange`,
+        'should use the prefixed name on the instance')
+    t.equal(EccKeys.EXCHANGE_KEY_NAME, 'ecc-exchange',
+        'should leave the static exchange key name alone')
+    t.equal(EccKeys.WRITE_KEY_NAME, 'ecc-write',
+        'should leave the static write key name alone')
+
+    EccKeys._instance = null
+    const plain = await EccKeys.load()
+    t.equal(plain.exchangeKeyName, 'ecc-exchange',
+        'a later load without dbKey should use the default name')
+
+    await prefixed.delete()
+})
+
 test('load with dbKey restores both ECC keypairs', async t => {
     await reset()
     EccKeys.EXCHANGE_KEY_NAME = 'ecc-exchange'

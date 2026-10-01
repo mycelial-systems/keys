@@ -347,8 +347,27 @@ export abstract class AbstractKeys {
         throw new Error('The child should implement this')
     }
 
+    /**
+     * The indexedDB names for this class, optionally prefixed with `dbKey`.
+     * Pure -- never writes to the class statics.
+     */
+    static _keyNames (dbKey?:string):{
+        exchangeKeyName:string;
+        writeKeyName:string;
+    } {
+        return dbKey ?
+            {
+                exchangeKeyName: `${dbKey}.${this.EXCHANGE_KEY_NAME}`,
+                writeKeyName: `${dbKey}.${this.WRITE_KEY_NAME}`
+            } :
+            {
+                exchangeKeyName: this.EXCHANGE_KEY_NAME,
+                writeKeyName: this.WRITE_KEY_NAME
+            }
+    }
+
     static async create<T extends AbstractKeys> (
-        this:ChildKeys,
+        this:ChildKeys & typeof AbstractKeys,
         session?:boolean,
         extractable?:boolean,
         keys?:{
@@ -370,11 +389,15 @@ export abstract class AbstractKeys {
             this.TYPE === 'ecc' ? 'ed25519' : 'rsa'
         )
 
+        const { exchangeKeyName, writeKeyName } = this._keyNames(keys?.dbKey)
+
         const keysInstance = new this({
             keys: { exchange, write },
             did,
             hasPersisted: false,
-            isSessionOnly: !!session
+            isSessionOnly: !!session,
+            exchangeKeyName,
+            writeKeyName
         })
 
         this._instance = keysInstance
@@ -421,8 +444,10 @@ export abstract class AbstractKeys {
         }
     ):Promise<T> {
         const shouldPersist = opts.persist !== false
-        const exchangeKeyName = opts.encryptionKeyName || this.EXCHANGE_KEY_NAME
-        const writeKeyName = opts.writeKeyName || this.WRITE_KEY_NAME
+        const defaults = this._keyNames(opts.dbKey)
+        const exchangeKeyName = opts.encryptionKeyName ||
+            defaults.exchangeKeyName
+        const writeKeyName = opts.writeKeyName || defaults.writeKeyName
 
         // cache -- only if it is for the same indexedDB entries
         const cached:AbstractKeys|null = this._instance

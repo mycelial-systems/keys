@@ -76,13 +76,6 @@ export class RsaKeys extends AbstractKeys {
             writeKeys?:CryptoKeyPair|null,
         }
     ):Promise<T> {
-        if (keys?.dbKey) {
-            const exchangeKeyName =
-                `${keys.dbKey}.${DEFAULT_RSA_EXCHANGE}`
-            const writeKeyName = `${keys.dbKey}.${DEFAULT_RSA_WRITE}`
-            RsaKeys.EXCHANGE_KEY_NAME = exchangeKeyName
-            RsaKeys.WRITE_KEY_NAME = writeKeyName
-        }
         return await super.create<T>(session, extractable, keys)
     }
 
@@ -104,13 +97,6 @@ export class RsaKeys extends AbstractKeys {
             session: false,
         }
     ):Promise<T> {
-        if (opts.dbKey) {
-            const exchangeKeyName =
-                `${opts.dbKey}.${DEFAULT_RSA_EXCHANGE}`
-            const writeKeyName = `${opts.dbKey}.${DEFAULT_RSA_WRITE}`
-            RsaKeys.EXCHANGE_KEY_NAME = exchangeKeyName
-            RsaKeys.WRITE_KEY_NAME = writeKeyName
-        }
         return super.load(opts) as Promise<T>
     }
 

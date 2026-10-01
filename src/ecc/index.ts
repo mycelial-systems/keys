@@ -65,13 +65,6 @@ export class EccKeys extends AbstractKeys {
             writeKeys?:CryptoKeyPair|null,
         }
     ):Promise<T> {
-        if (keys?.dbKey) {
-            const exchangeKeyName =
-                `${keys.dbKey}.${DEFAULT_ECC_EXCHANGE}`
-            const writeKeyName = `${keys.dbKey}.${DEFAULT_ECC_WRITE}`
-            EccKeys.EXCHANGE_KEY_NAME = exchangeKeyName
-            EccKeys.WRITE_KEY_NAME = writeKeyName
-        }
         return await super.create<T>(session, extractable, keys)
     }
 
@@ -148,13 +141,6 @@ export class EccKeys extends AbstractKeys {
             session: false,
         }
     ):Promise<T> {
-        if (opts.dbKey) {
-            const exchangeKeyName =
-                `${opts.dbKey}.${DEFAULT_ECC_EXCHANGE}`
-            const writeKeyName = `${opts.dbKey}.${DEFAULT_ECC_WRITE}`
-            EccKeys.EXCHANGE_KEY_NAME = exchangeKeyName
-            EccKeys.WRITE_KEY_NAME = writeKeyName
-        }
         return super.load(opts) as Promise<T>
     }
 
